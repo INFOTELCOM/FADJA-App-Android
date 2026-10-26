@@ -14,7 +14,7 @@ permissions:
 
 jobs:
   build:
-    name: Build release APK
+    name: Build and verify release APK
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -34,14 +34,25 @@ jobs:
         working-directory: FADJA-Flutter-Native
         run: flutter pub get
 
-      - name: Build release APK
+      - name: Build universal release APK
         working-directory: FADJA-Flutter-Native
         run: flutter build apk --release
 
-      - name: Upload APK
+      - name: Verify APK integrity and signature
+        working-directory: FADJA-Flutter-Native
+        run: |
+          APK="build/app/outputs/flutter-apk/app-release.apk"
+          test -s "$APK"
+          unzip -t "$APK"
+          APKSIGNER="$(find "$ANDROID_HOME/build-tools" -type f -name apksigner | sort -V | tail -n 1)"
+          test -n "$APKSIGNER"
+          "$APKSIGNER" verify --verbose "$APK"
+          ls -lh "$APK"
+
+      - name: Upload verified APK
         uses: actions/upload-artifact@v4
         with:
-          name: fadja-android-apk
+          name: fadja-android-apk-verified
           path: FADJA-Flutter-Native/build/app/outputs/flutter-apk/app-release.apk
           if-no-files-found: error
           retention-days: 14
