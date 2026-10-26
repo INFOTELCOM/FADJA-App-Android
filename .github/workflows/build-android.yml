@@ -1,0 +1,47 @@
+name: Build FADJA Android APK
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - "FADJA-Flutter-Native/**"
+      - ".github/workflows/build-android.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build release APK
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Generate Android platform files
+        working-directory: FADJA-Flutter-Native
+        run: flutter create --platforms=android .
+
+      - name: Install dependencies
+        working-directory: FADJA-Flutter-Native
+        run: flutter pub get
+
+      - name: Build release APK
+        working-directory: FADJA-Flutter-Native
+        run: flutter build apk --release
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: fadja-android-apk
+          path: FADJA-Flutter-Native/build/app/outputs/flutter-apk/app-release.apk
+          if-no-files-found: error
+          retention-days: 14
